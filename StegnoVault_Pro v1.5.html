@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StegnaVault Pro | Advanced Steganography Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .cyber-input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #38bdf8;
+            transition: all 0.3s ease;
+        }
+        .cyber-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .cyber-btn {
+            background: linear-gradient(45deg, #2563eb, #0ea5e9);
+            border: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .cyber-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
+        }
+        .cyber-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Slider for Comparator */
+        .compare-container {
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }
+        .compare-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            overflow: hidden;
+            border-right: 2px solid #38bdf8;
+            z-index: 20;
+        }
+        .slider-handle {
+            position: absolute;
+            top: 50%;
+            right: -15px;
+            width: 30px;
+            height: 30px;
+            background: #38bdf8;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: ew-resize;
+            z-index: 30;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="border-b border-slate-700 bg-slate-900/90 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="shield-check" class="text-blue-500 w-8 h-8"></i>
+                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">StegnaVault Pro</span>
+                </div>
+                <div class="hidden md:flex space-x-1">
+                    <button onclick="showSection('fcrypt')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-blue-400 hover:bg-slate-800 transition-colors bg-slate-800" id="btn-fcrypt">FCrypt</button>
+                    <button onclick="showSection('decrypt')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors" id="btn-decrypt">Decrypt</button>
+                    <button onclick="showSection('checker')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors" id="btn-checker">Checker</button>
+                    <button onclick="showSection('resizer')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors" id="btn-resizer">Resizer</button>
+                    <button onclick="showSection('visualizer')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors" id="btn-visualizer">Visualizer</button>
+                    <button onclick="showSection('compare')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors" id="btn-compare">Compare</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 max-w-7xl mx-auto w-full">
+        
+        <!-- FCRYPT SECTION (Home) -->
+        <section id="fcrypt" class="space-y-6 animate-fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Inputs -->
+                <div class="glass-panel p-6 rounded-xl space-y-6">
+                    <h2 class="text-2xl font-bold text-blue-400 flex items-center gap-2">
+                        <i data-lucide="lock"></i> Encrypt & Embed
+                    </h2>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-400">1. Cover Image</label>
+                        <input type="file" id="fc-image" accept="image/*" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer cyber-input rounded-lg">
+                        <p id="fc-capacity" class="text-xs text-emerald-400 h-4"></p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-400">2. Secret Data (File)</label>
+                        <input type="file" id="fc-file" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer cyber-input rounded-lg">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-400">3. Encryption Password</label>
+                        <input type="password" id="fc-pass" placeholder="Enter secure password" class="w-full px-4 py-2 rounded-lg cyber-input">
+                    </div>
+
+                    <button onclick="processEncryption()" id="fc-btn" class="w-full py-3 rounded-lg text-white font-bold cyber-btn flex justify-center items-center gap-2">
+                        <i data-lucide="cpu"></i> Generate Stego Image
+                    </button>
+                </div>
+
+                <!-- Preview / Output -->
+                <div class="glass-panel p-6 rounded-xl flex flex-col items-center justify-center min-h-[400px] relative">
+                    <div id="fc-loading" class="hidden absolute inset-0 bg-slate-900/80 z-10 flex flex-col items-center justify-center rounded-xl">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                        <p class="text-blue-400 animate-pulse">Encoding bits...</p>
+                    </div>
+                    <canvas id="fc-canvas" class="max-w-full max-h-[400px] rounded shadow-lg border border-slate-700"></canvas>
+                    <a id="fc-download" class="hidden mt-4 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="download"></i> Download PNG
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- DECRYPT SECTION -->
+        <section id="decrypt" class="hidden space-y-6">
+            <div class="glass-panel p-6 rounded-xl max-w-3xl mx-auto space-y-6">
+                <h2 class="text-2xl font-bold text-green-400 flex items-center gap-2">
+                    <i data-lucide="unlock"></i> Extract & Decrypt
+                </h2>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-400">1. Upload Stego Image</label>
+                    <input type="file" id="dc-image" accept="image/png" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 cursor-pointer cyber-input rounded-lg">
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-400">2. Password</label>
+                    <input type="password" id="dc-pass" placeholder="Enter password used for encryption" class="w-full px-4 py-2 rounded-lg cyber-input">
+                </div>
+
+                <button onclick="processDecryption()" id="dc-btn" class="w-full py-3 rounded-lg text-white font-bold cyber-btn bg-gradient-to-r from-green-600 to-emerald-500">
+                    Extract Data
+                </button>
+
+                <div id="dc-result" class="hidden p-4 rounded bg-slate-800 border border-slate-700">
+                    <p class="text-sm text-slate-300 mb-2">Decryption Successful!</p>
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-slate-700 rounded">
+                            <i data-lucide="file-check" class="text-green-400"></i>
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <p id="dc-filename" class="text-white font-mono truncate">filename.ext</p>
+                            <p id="dc-filesize" class="text-xs text-slate-500">0 KB</p>
+                        </div>
+                        <a id="dc-download" class="px-4 py-2 bg-blue-600 rounded text-white text-sm hover:bg-blue-700">Download</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHECKER SECTION -->
+        <section id="checker" class="hidden space-y-6">
+            <div class="glass-panel p-6 rounded-xl max-w-3xl mx-auto">
+                <h2 class="text-2xl font-bold text-yellow-400 flex items-center gap-2 mb-6">
+                    <i data-lucide="scan-line"></i> Stego Integrity Checker
+                </h2>
+                
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1 space-y-4">
+                        <div class="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-yellow-500 transition-colors" id="check-drop">
+                            <i data-lucide="image-plus" class="mx-auto h-12 w-12 text-slate-500 mb-2"></i>
+                            <input type="file" id="chk-image" accept="image/*" class="hidden" onchange="checkImage(this)">
+                            <button onclick="document.getElementById('chk-image').click()" class="text-blue-400 hover:underline">Select Image</button>
+                            <p class="text-xs text-slate-500 mt-2">Supports PNG/JPG</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 bg-slate-900 rounded-lg p-4 border border-slate-700 font-mono text-sm overflow-hidden relative">
+                        <div class="absolute top-2 right-2 flex gap-1">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <p class="text-slate-500 mb-2"># Analysis Terminal</p>
+                        <div id="chk-console" class="space-y-1">
+                            <p class="text-slate-600">> Waiting for input...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RESIZER SECTION -->
+        <section id="resizer" class="hidden space-y-6">
+            <div class="glass-panel p-6 rounded-xl max-w-4xl mx-auto">
+                <h2 class="text-2xl font-bold text-purple-400 flex items-center gap-2 mb-6">
+                    <i data-lucide="maximize"></i> Capacity Expander (Resizer)
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1">Source Image</label>
+                            <input type="file" id="rs-image" class="w-full text-xs cyber-input p-2 rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1">Scale Factor</label>
+                            <select id="rs-scale" class="w-full cyber-input p-2 rounded bg-slate-900">
+                                <option value="2">2x (Double)</option>
+                                <option value="4">4x (Quadruple)</option>
+                                <option value="8">8x (Massive)</option>
+                                <option value="16">16x (Extreme)</option>
+                                <option value="32">32x (Ludicrous)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1">Algorithm</label>
+                            <select id="rs-algo" class="w-full cyber-input p-2 rounded bg-slate-900">
+                                <option value="nearest">Nearest Neighbor (Pixel Perfect)</option>
+                                <option value="bicubic">Bicubic (Smoother)</option>
+                            </select>
+                        </div>
+                        <button onclick="processResize()" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-bold transition-colors">
+                            Upscale Image
+                        </button>
+                    </div>
+
+                    <div class="col-span-2 bg-slate-900 rounded border border-slate-700 p-4 flex flex-col items-center justify-center">
+                        <p id="rs-info" class="text-xs text-slate-500 self-start mb-2">New Capacity: -</p>
+                        <canvas id="rs-canvas" class="max-w-full max-h-[300px]"></canvas>
+                        <a id="rs-download" class="mt-4 hidden text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer">
+                            <i data-lucide="download"></i> Download Upscaled PNG
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISUALIZER SECTION -->
+        <section id="visualizer" class="hidden space-y-6">
+            <div class="glass-panel p-6 rounded-xl">
+                <h2 class="text-2xl font-bold text-pink-400 flex items-center gap-2 mb-6">
+                    <i data-lucide="bar-chart-2"></i> Data Structure Visualizer
+                </h2>
+                <div class="space-y-4">
+                    <input type="file" id="vis-image" accept="image/png" onchange="visualizeStructure(this)" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-600 file:text-white hover:file:bg-pink-700 cursor-pointer cyber-input rounded-lg">
+                    
+                    <div id="vis-container" class="hidden space-y-4">
+                        <div class="h-24 w-full bg-slate-800 rounded-lg overflow-hidden flex relative" id="vis-bar">
+                            <!-- Bars injected by JS -->
+                        </div>
+                        <div class="flex flex-wrap gap-4 text-xs font-mono">
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 bg-cyan-500 rounded"></div> Header (Meta)</div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 bg-green-500 rounded"></div> Encrypted Data</div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 bg-red-500 rounded"></div> Tail Marker</div>
+                            <div class="flex items-center gap-2"><div class="w-3 h-3 bg-slate-700 rounded"></div> Unused Space</div>
+                        </div>
+                        <div id="vis-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-700"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMPARATOR SECTION -->
+        <section id="compare" class="hidden space-y-6">
+            <div class="glass-panel p-6 rounded-xl">
+                <h2 class="text-2xl font-bold text-orange-400 flex items-center gap-2 mb-6">
+                    <i data-lucide="git-compare"></i> Image Comparator
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs text-slate-500 uppercase tracking-wider mb-1">Original Image</label>
+                        <input type="file" id="cmp-orig" accept="image/*" class="w-full text-xs cyber-input p-2 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-500 uppercase tracking-wider mb-1">Stego Image</label>
+                        <input type="file" id="cmp-stego" accept="image/*" class="w-full text-xs cyber-input p-2 rounded">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mb-4">
+                     <button onclick="compareMode('slider')" class="flex-1 py-2 rounded bg-slate-800 hover:bg-slate-700 text-sm border border-slate-600">Slider View</button>
+                     <button onclick="compareMode('diff')" class="flex-1 py-2 rounded bg-slate-800 hover:bg-slate-700 text-sm border border-slate-600">Difference Map (Red Subtraction)</button>
+                </div>
+
+                <div class="relative w-full h-[500px] bg-black rounded-lg overflow-hidden flex items-center justify-center border border-slate-700" id="cmp-viewport">
+                    <p class="text-slate-600">Load both images to begin comparison</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- ICONS & UI INIT ---
+        lucide.createIcons();
+
+        function showSection(id) {
+            document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            
+            // Update Nav State
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('bg-slate-800', 'text-blue-400');
+                b.classList.add('text-slate-300');
+            });
+            const activeBtn = document.getElementById(`btn-${id}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-slate-800', 'text-blue-400');
+                activeBtn.classList.remove('text-slate-300');
+            }
+        }
+
+        // --- CORE STEGANOGRAPHY ENGINE ---
+
+        const MAGIC_START = "<ICRYPT>";
+        const MAGIC_END = "</ICRYPT>";
+
+        function calculateParity(byte) {
+            let count = 0;
+            for (let i = 0; i < 8; i++) {
+                if ((byte >> i) & 1) count++;
+            }
+            return count % 2; // 0 (Even) or 1 (Odd)
+        }
+
+        function setBitInValue(val, bit) {
+            const isOdd = val % 2 !== 0;
+            if (bit === 1 && !isOdd) {
+                return val === 255 ? 254 : val + 1; 
+            } 
+            if (bit === 0 && isOdd) {
+                return val === 255 ? 254 : val - 1; 
+            }
+            return val;
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // --- ENCRYPTION LOGIC ---
+
+        async function processEncryption() {
+            const imgInput = document.getElementById('fc-image');
+            const fileInput = document.getElementById('fc-file');
+            const password = document.getElementById('fc-pass').value;
+            const btn = document.getElementById('fc-btn');
+            const loading = document.getElementById('fc-loading');
+
+            if (!imgInput.files[0] || !fileInput.files[0] || !password) {
+                alert("Please select image, file, and enter a password.");
+                return;
+            }
+
+            btn.disabled = true;
+            loading.classList.remove('hidden');
+
+            try {
+                // 1. Read Image
+                const imgBitmap = await createImageBitmap(imgInput.files[0]);
+                const canvas = document.getElementById('fc-canvas');
+                canvas.width = imgBitmap.width;
+                canvas.height = imgBitmap.height;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(imgBitmap, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // 2. Read File & Convert to Base64
+                const file = fileInput.files[0];
+                const fileData64 = await fileToBase64(file);
+
+                // 3. Create Secure Object (Everything inside here gets encrypted)
+                // "verifier" is the secret token we check upon decryption
+                const secretObject = {
+                    verifier: "ICRYPT_OK", 
+                    meta: {
+                        n: file.name,
+                        t: file.type,
+                        s: file.size,
+                        ts: Date.now()
+                    },
+                    data: fileData64
+                };
+
+                const secretString = JSON.stringify(secretObject);
+
+                // 4. Encrypt the entire object string
+                const encrypted = CryptoJS.AES.encrypt(secretString, password).toString();
+
+                // 5. Construct Payload: <ICRYPT> + ENCRYPTED_STRING + </ICRYPT>
+                const payload = `${MAGIC_START}${encrypted}${MAGIC_END}`;
+                
+                // 6. Check Capacity
+                const totalPixels = canvas.width * canvas.height;
+                const maxBytes = Math.floor(totalPixels / 3);
+                
+                if (payload.length > maxBytes) {
+                    throw new Error(`File too large! Image capacity: ${(maxBytes/1024).toFixed(2)}KB. Payload: ${(payload.length/1024).toFixed(2)}KB.`);
+                }
+
+                // 7. Encode
+                const data = imageData.data;
+                let dataIndex = 0; 
+
+                for (let i = 0; i < data.length && dataIndex < payload.length; i += 12) { 
+                    const charCode = payload.charCodeAt(dataIndex);
+                    const bits = [];
+                    for(let b=7; b>=0; b--) bits.push((charCode >> b) & 1);
+                    bits.push(calculateParity(charCode));
+
+                    // Pixel 1
+                    data[i] = setBitInValue(data[i], bits[0]);     
+                    data[i+1] = setBitInValue(data[i+1], bits[1]); 
+                    data[i+2] = setBitInValue(data[i+2], bits[2]); 
+                    
+                    // Pixel 2
+                    data[i+4] = setBitInValue(data[i+4], bits[3]); 
+                    data[i+5] = setBitInValue(data[i+5], bits[4]); 
+                    data[i+6] = setBitInValue(data[i+6], bits[5]); 
+
+                    // Pixel 3
+                    data[i+8] = setBitInValue(data[i+8], bits[6]); 
+                    data[i+9] = setBitInValue(data[i+9], bits[7]); 
+                    data[i+10] = setBitInValue(data[i+10], bits[8]); 
+
+                    dataIndex++;
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+
+                // 8. Download Link
+                const link = document.getElementById('fc-download');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `protected_${Date.now()}.png`; // Generic name to hide contents
+                link.classList.remove('hidden');
+
+            } catch (e) {
+                alert("Error: " + e.message);
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                loading.classList.add('hidden');
+            }
+        }
+
+        // --- DECRYPTION LOGIC ---
+
+        async function processDecryption() {
+            const imgInput = document.getElementById('dc-image');
+            const password = document.getElementById('dc-pass').value;
+            const btn = document.getElementById('dc-btn');
+            const resultDiv = document.getElementById('dc-result');
+            
+            if (!imgInput.files[0] || !password) {
+                alert("Please select image and enter password.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Extracting...";
+            resultDiv.classList.add('hidden');
+
+            try {
+                const imgBitmap = await createImageBitmap(imgInput.files[0]);
+                const canvas = document.createElement('canvas');
+                canvas.width = imgBitmap.width;
+                canvas.height = imgBitmap.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(imgBitmap, 0, 0);
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+                // Extract String
+                let extracted = "";
+                let finished = false;
+
+                // Chunked reading could be better, but simple loop for now
+                for (let i = 0; i < data.length; i += 12) {
+                    if (i + 10 >= data.length) break;
+
+                    const bits = [];
+                    // P1
+                    bits.push(data[i] % 2); bits.push(data[i+1] % 2); bits.push(data[i+2] % 2);
+                    // P2
+                    bits.push(data[i+4] % 2); bits.push(data[i+5] % 2); bits.push(data[i+6] % 2);
+                    // P3
+                    bits.push(data[i+8] % 2); bits.push(data[i+9] % 2);
+                    
+                    let byteVal = 0;
+                    for (let b = 0; b < 8; b++) {
+                        byteVal = (byteVal << 1) | bits[b];
+                    }
+
+                    const char = String.fromCharCode(byteVal);
+                    extracted += char;
+
+                    // Header check
+                    if (extracted.length === MAGIC_START.length && extracted !== MAGIC_START) {
+                       throw new Error("No Steganography data found (Header mismatch).");
+                    }
+                    if (extracted.endsWith(MAGIC_END)) {
+                        finished = true;
+                        break;
+                    }
+                }
+
+                if (!finished) throw new Error("File corrupted or not an ICRYPT file.");
+
+                // Isolate Encrypted Blob
+                const encryptedBlob = extracted.substring(MAGIC_START.length, extracted.length - MAGIC_END.length);
+                
+                // Decrypt
+                let decryptedString;
+                try {
+                    const bytes = CryptoJS.AES.decrypt(encryptedBlob, password);
+                    decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+                } catch(e) {
+                    throw new Error("Wrong Password (Decryption Failed).");
+                }
+
+                if (!decryptedString) throw new Error("Wrong Password (Empty Result).");
+
+                // Parse and Verify
+                const secretObj = JSON.parse(decryptedString);
+
+                // INTEGRITY CHECK: Verifier Token
+                if(secretObj.verifier !== "ICRYPT_OK") {
+                    throw new Error("Password incorrect: Integrity check failed.");
+                }
+
+                // If we get here, the password is definitely correct
+                const meta = secretObj.meta;
+                const fileData64 = secretObj.data;
+
+                // Convert Base64 back to Blob
+                const byteCharacters = atob(fileData64.split(',')[1]);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], {type: meta.t});
+                const url = URL.createObjectURL(blob);
+                
+                resultDiv.classList.remove('hidden');
+                document.getElementById('dc-filename').innerText = meta.n;
+                document.getElementById('dc-filesize').innerText = (meta.s / 1024).toFixed(2) + " KB";
+                
+                const dlBtn = document.getElementById('dc-download');
+                dlBtn.href = url;
+                dlBtn.download = meta.n;
+
+            } catch (e) {
+                alert("Error: " + e.message);
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Extract Data";
+            }
+        }
+
+        // --- CHECKER LOGIC ---
+
+        async function checkImage(input) {
+            const consoleDiv = document.getElementById('chk-console');
+            consoleDiv.innerHTML = '<p class="text-blue-400">>> Initializing Scan...</p>';
+
+            if(!input.files[0]) return;
+
+            try {
+                const imgBitmap = await createImageBitmap(input.files[0]);
+                const canvas = document.createElement('canvas');
+                canvas.width = imgBitmap.width;
+                canvas.height = imgBitmap.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(imgBitmap, 0, 0);
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+                consoleDiv.innerHTML += `<p class="text-slate-400">>> Image loaded: ${imgBitmap.width}x${imgBitmap.height}px</p>`;
+
+                // Extract Header Only (first ~20 chars)
+                let headerStr = "";
+                for (let i = 0; i < 20 * 12; i += 12) {
+                    let byteVal = 0;
+                    for (let b = 0; b < 8; b++) {
+                         const rgbIdx = [0,1,2, 4,5,6, 8,9][b];
+                         const bit = data[i + rgbIdx] % 2;
+                         byteVal = (byteVal << 1) | bit;
+                    }
+                    headerStr += String.fromCharCode(byteVal);
+                }
+
+                if (headerStr.startsWith(MAGIC_START)) {
+                    consoleDiv.innerHTML += `<p class="text-green-400">>> [SUCCESS] ICRYPT Header Detected.</p>`;
+                    consoleDiv.innerHTML += `<p class="text-yellow-400">>> Privacy: Protected.</p>`;
+                    consoleDiv.innerHTML += `<p class="text-slate-500">>> Metadata: Encrypted.</p>`;
+                    consoleDiv.innerHTML += `<p class="text-slate-500">>> Filename: Hidden.</p>`;
+                    consoleDiv.innerHTML += `<p class="text-blue-300">>> Status: This file contains secure steganography data.</p>`;
+                } else {
+                    consoleDiv.innerHTML += `<p class="text-red-400">>> [FAIL] No Steganography Header detected.</p>`;
+                    consoleDiv.innerHTML += `<p class="text-slate-500">>> This appears to be a normal image.</p>`;
+                }
+
+            } catch(e) {
+                consoleDiv.innerHTML += `<p class="text-red-500">>> Error: ${e.message}</p>`;
+            }
+        }
+
+        // --- RESIZER LOGIC ---
+
+        function processResize() {
+            const input = document.getElementById('rs-image');
+            const scale = parseInt(document.getElementById('rs-scale').value);
+            const algo = document.getElementById('rs-algo').value;
+            const canvas = document.getElementById('rs-canvas');
+            const dl = document.getElementById('rs-download');
+            
+            if(!input.files[0]) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const newW = img.width * scale;
+                    const newH = img.height * scale;
+                    
+                    canvas.width = newW;
+                    canvas.height = newH;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = (algo === 'bicubic');
+                    
+                    ctx.drawImage(img, 0, 0, newW, newH);
+                    
+                    const cap = (newW * newH) / 3 / 1024;
+                    document.getElementById('rs-info').innerText = `New Size: ${newW}x${newH} | Capacity: ${cap.toFixed(2)} KB`;
+                    
+                    dl.classList.remove('hidden');
+                    dl.href = canvas.toDataURL('image/png');
+                    dl.download = `upscaled_${scale}x.png`;
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        // --- VISUALIZER LOGIC ---
+        
+        async function visualizeStructure(input) {
+            if(!input.files[0]) return;
+            document.getElementById('vis-container').classList.remove('hidden');
+            const bar = document.getElementById('vis-bar');
+            bar.innerHTML = '<div class="w-full h-full flex items-center justify-center text-slate-500">Scanning...</div>';
+            
+            const imgBitmap = await createImageBitmap(input.files[0]);
+            const cvs = document.createElement('canvas');
+            cvs.width = imgBitmap.width;
+            cvs.height = imgBitmap.height;
+            const ctx = cvs.getContext('2d');
+            ctx.drawImage(imgBitmap, 0, 0);
+            const data = ctx.getImageData(0, 0, cvs.width, cvs.height).data;
+            
+            // Simplified scanner looking for magic strings
+            let str = "";
+            let limit = 5000; 
+            for (let i = 0; i < limit * 12; i += 12) {
+                 let byteVal = 0;
+                 for (let b = 0; b < 8; b++) {
+                     const idx = [0,1,2,4,5,6,8,9][b];
+                     byteVal = (byteVal << 1) | (data[i+idx]%2);
+                 }
+                 str += String.fromCharCode(byteVal);
+            }
+
+            const stats = document.getElementById('vis-stats');
+            const totalBytes = (cvs.width * cvs.height) / 3;
+
+            if(str.startsWith(MAGIC_START)) {
+                // Since everything is one big encrypted blob now, we just show usage
+                // We can try to approximate the end of the blob if we didn't scan whole image
+                // But without decrypting we don't know exact size.
+                // We assume the user just made it, so let's show visual representation of "Encrypted Data"
+                
+                // For visualization, we treat everything between headers as "Encrypted Block"
+                // The headers are tiny.
+                
+                bar.innerHTML = `
+                    <div style="width:2%" class="h-full bg-cyan-500" title="Header"></div>
+                    <div style="width:50%" class="h-full bg-green-500 flex items-center justify-center text-xs font-bold text-black/50" title="Encrypted Payload">ENCRYPTED BLOB</div>
+                    <div style="width:48%" class="h-full bg-slate-700" title="Free / Unknown"></div>
+                `;
+                
+                stats.innerHTML = `
+                    <div class="text-slate-400">Total Capacity:<br><span class="text-white">${(totalBytes/1024).toFixed(2)} KB</span></div>
+                    <div class="text-slate-400">Type:<br><span class="text-yellow-400">Full Encryption</span></div>
+                `;
+            } else {
+                 bar.innerHTML = '<div class="w-full text-center text-slate-500">No ICRYPT data found</div>';
+                 stats.innerHTML = '';
+            }
+        }
+
+        // --- COMPARATOR LOGIC (FIXED) ---
+        let cmpImg1 = null, cmpImg2 = null;
+
+        document.getElementById('cmp-orig').addEventListener('change', async (e) => {
+            if(e.target.files[0]) cmpImg1 = await createImageBitmap(e.target.files[0]);
+            checkCompareReady();
+        });
+        document.getElementById('cmp-stego').addEventListener('change', async (e) => {
+            if(e.target.files[0]) cmpImg2 = await createImageBitmap(e.target.files[0]);
+            checkCompareReady();
+        });
+
+        function checkCompareReady() {
+            if(cmpImg1 && cmpImg2) {
+                compareMode('slider'); 
+            }
+        }
+
+        function compareMode(mode) {
+            if(!cmpImg1 || !cmpImg2) return;
+            const container = document.getElementById('cmp-viewport');
+            container.innerHTML = '';
+            
+            // Set canvas size to match the images (assuming same size for comparison)
+            const w = cmpImg1.width;
+            const h = cmpImg1.height;
+            
+            if(mode === 'slider') {
+                container.innerHTML = `
+                    <div class="compare-container relative w-full h-full flex items-center justify-center bg-black" id="cmp-slider-box">
+                        <div class="relative" id="cmp-inner-wrap">
+                            <!-- Bottom Image (Original) -->
+                            <canvas id="c-cvs-1" class="block"></canvas>
+                            
+                            <!-- Overlay (Stego) -->
+                            <div class="compare-overlay absolute top-0 left-0 h-full overflow-hidden" id="c-overlay" style="width: 50%;">
+                                <canvas id="c-cvs-2" class="absolute top-0 left-0"></canvas>
+                            </div>
+                            
+                            <!-- Handle -->
+                            <div class="slider-handle" id="c-handle" style="left: 50%"><i data-lucide="chevrons-left-right" class="w-4 h-4 text-white"></i></div>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+                
+                const wrap = document.getElementById('cmp-inner-wrap');
+                
+                // Calculate scale to fit in viewport
+                const viewportW = container.clientWidth;
+                const viewportH = container.clientHeight;
+                const scale = Math.min(viewportW / w, viewportH / h);
+                
+                const finalW = w * scale;
+                const finalH = h * scale;
+                
+                wrap.style.width = finalW + "px";
+                wrap.style.height = finalH + "px";
+
+                const cvs1 = document.getElementById('c-cvs-1');
+                const cvs2 = document.getElementById('c-cvs-2');
+                
+                // Set resolution
+                cvs1.width = w; cvs1.height = h;
+                cvs2.width = w; cvs2.height = h;
+                
+                // Set CSS display size
+                cvs1.style.width = "100%"; cvs1.style.height = "100%";
+                cvs2.style.width = finalW + "px"; // Fixed pixel width crucial for overlay
+                cvs2.style.height = finalH + "px";
+                
+                const ctx1 = cvs1.getContext('2d');
+                const ctx2 = cvs2.getContext('2d');
+                ctx1.drawImage(cmpImg1, 0, 0);
+                ctx2.drawImage(cmpImg2, 0, 0);
+                
+                // Logic
+                const overlay = document.getElementById('c-overlay');
+                const handle = document.getElementById('c-handle');
+                
+                let active = false;
+                
+                const move = (e) => {
+                    if(!active) return;
+                    const rect = wrap.getBoundingClientRect(); // Use wrap rect
+                    let x = (e.clientX || e.touches[0].clientX) - rect.left;
+                    x = Math.max(0, Math.min(x, rect.width));
+                    const pct = (x / rect.width) * 100;
+                    
+                    overlay.style.width = `${pct}%`;
+                    handle.style.left = `${pct}%`;
+                };
+                
+                handle.addEventListener('mousedown', () => active = true);
+                window.addEventListener('mouseup', () => active = false);
+                window.addEventListener('mousemove', move); // Window listener for smoother drag out of box
+                
+                handle.addEventListener('touchstart', () => active = true);
+                window.addEventListener('touchend', () => active = false);
+                window.addEventListener('touchmove', move);
+
+            } else if (mode === 'diff') {
+                const cvs = document.createElement('canvas');
+                cvs.width = w; cvs.height = h;
+                const ctx = cvs.getContext('2d');
+                
+                ctx.drawImage(cmpImg1, 0, 0);
+                const d1 = ctx.getImageData(0,0,w,h).data;
+                
+                ctx.clearRect(0,0,w,h);
+                ctx.drawImage(cmpImg2, 0, 0);
+                const d2 = ctx.getImageData(0,0,w,h).data;
+                
+                const diffImg = ctx.createImageData(w, h);
+                const dd = diffImg.data;
+                
+                let diffCount = 0;
+                for(let i=0; i<d1.length; i+=4) {
+                    const rDiff = Math.abs(d1[i] - d2[i]);
+                    const gDiff = Math.abs(d1[i+1] - d2[i+1]);
+                    const bDiff = Math.abs(d1[i+2] - d2[i+2]);
+                    
+                    if(rDiff + gDiff + bDiff > 0) {
+                        dd[i] = 255;   // Red
+                        dd[i+1] = 0;
+                        dd[i+2] = 0;
+                        dd[i+3] = 255;
+                        diffCount++;
+                    } else {
+                        dd[i] = 0; dd[i+1] = 0; dd[i+2] = 0; dd[i+3] = 255;
+                    }
+                }
+                
+                ctx.putImageData(diffImg, 0, 0);
+                
+                container.innerHTML = '';
+                cvs.className = "max-w-full max-h-full object-contain border border-red-500/30";
+                container.appendChild(cvs);
+                
+                const info = document.createElement('div');
+                info.className = "absolute bottom-4 left-4 bg-black/80 p-2 rounded text-red-500 text-xs";
+                info.innerText = `Differences detected: ${diffCount} pixels`;
+                container.appendChild(info);
+            }
+        }
+        
+        document.getElementById('fc-image').addEventListener('change', async function(e) {
+            if (e.target.files[0]) {
+                const bmp = await createImageBitmap(e.target.files[0]);
+                const capBytes = (bmp.width * bmp.height) / 3;
+                document.getElementById('fc-capacity').innerText = `Capacity: ${(capBytes/1024).toFixed(2)} KB`;
+            }
+        });
+
+    </script>
+</body>
+</html>
